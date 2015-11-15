@@ -7,19 +7,169 @@ output:
 
 
 ## Loading and preprocessing the data
+Loading the data:
+```{r echo=TRUE}
+library(dplyr)
+projectLocation = '/Users/JKG/Documents/00_coursera/reproresearch/project1'
+setwd(projectLocation)
+fileName = 'activity.csv'
+fullFilePath = paste(projectLocation, "/", fileName, sep='')
+data = read.csv(fullFilePath)
+# print names to show that data has loaded
+print (names(data))
+```
 
 
 
 ## What is mean total number of steps taken per day?
+```{r echo=TRUE}
+# get the total number of steps per day
+sumPerDay = summarise(group_by(data, date),
+          sumSteps = sum(steps, na.rm = TRUE))
+#show histogram of steps per day
+hist(sumPerDay$sumSteps)
+```
 
+```{r echo=TRUE}
+#get the mean total number of steps per day
+mean(sumPerDay$sumSteps)
+
+```
+
+```{r echo=TRUE}
+#also show the median # of steps per day
+median(sumPerDay$sumSteps)
+```
 
 
 ## What is the average daily activity pattern?
+```{r echo=TRUE}
+#now we'll aggregate by interval ID
+meanPerIntervalID = summarise(group_by(data, interval),
+          meanSteps = mean(steps, na.rm = TRUE))
+#show line chart of # of steps per Interval ID
+with(meanPerIntervalID, plot(interval, meanSteps, main = "Average Steps Per Interval ID", xlab = 'Interval ID', ylab = "# Steps", type = "n"))
+lines(meanPerIntervalID$interval, meanPerIntervalID$meanSteps)
+
+```
+
+```{r echo=TRUE}
+#find the Interval ID with the highest number of mean steps
+meanPerIntervalID[which.max(meanPerIntervalID$meanSteps),]
+```
+
+## Inputing missing values
+
+1. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+```{r echo=TRUE}
+# here are the number of frows with NAs in the steps field
+naRows = subset(data, is.na(steps))
+nrow(naRows)
+```
+
+2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+
+```{r echo=TRUE}
+# I'll fill in values with the mean value for each particular interval
+```
+
+3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
+```{r echo=TRUE}
+# Below I fill in values with the mean value for each particular interval
+merged <- merge(data,meanPerIntervalID,by='interval')
+merged = mutate(merged, stepsFilled = ifelse(is.na(steps), meanSteps, steps))
+# note how the first value for steps is NA, but in the column "stepsFilled" it now has the mean value, the rest are the normal reported values
+head(merged)
+```
+
+4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+```{r echo=TRUE}
+# for reference, here's the original steps per day, excluding NAs completely 
+hist(sumPerDay$sumSteps, main= 'Histogram of original steps per day, excluding NAs')
+```
+
+```{r echo=TRUE}
+# now let's do the histogram of NAs replaced with means for respective interval IDs
+# get the total number of steps per day, with the filled NAs
+sumPerDayFilled = summarise(group_by(merged, date),
+          sumSteps = sum(stepsFilled, na.rm = TRUE))
+#show histogram of steps per day
+hist(sumPerDayFilled$sumSteps, main = 'Histogram of steps per day, with NAs replaced by mean per interval ID ')
+# as seen above, this new data set is more normally distributed, many fewer days with < 5,000 steps 
+```
+
+Do these values differ from the estimates from the first part of the assignment? 
+
+```{r echo=TRUE}
+# now let's look at the means and medians for comparison.
+#again let's get the original mean total number of steps per day (original, NAs excluded)
+mean(sumPerDay$sumSteps)
+```
+
+```{r echo=TRUE}
+#get the new, derived mean total number of steps per day (NAs replaced with means)
+mean(sumPerDayFilled$sumSteps)
+# we can see that the mean of the data with replaced NAs is now higher by 1,300 steps
+```
 
 
+```{r echo=TRUE}
+#and here is the new, derived median # of steps per day (original, NAs excluded)
+median(sumPerDay$sumSteps)
+```
 
-## Imputing missing values
+
+```{r echo=TRUE}
+#also show the median # of steps per day (NAs replaced with means)
+median(sumPerDayFilled$sumSteps)
+# we can see that the median of the data with replaced NAs is now higher by over 300 steps
+# both mean and median per day are higher when replacing any interval's NA value with that interval's mean
+```
+
+What is the impact of imputing missing data on the estimates of the total daily number of steps?
+```{r echo=TRUE}
+#original total # of steps
+sum(data$steps, na.rm = TRUE)
+#new, derived/ filled in total # of steps
+sum(merged$stepsFilled, na.rm = TRUE)
+# the difference between filled-in and original is
+sum(merged$stepsFilled, na.rm = TRUE) - sum(data$steps, na.rm = TRUE)
+# the overall # of steps is greater by over 86,000 steps when filling in NAs with means for each interval
+```
 
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+For this part the weekdays() function may be of some help here. Use the dataset with the filled-in missing values for this part.
+
+1. Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+
+```{r echo=TRUE}
+# convert date (factor) into date class with as.Date
+merged = mutate(merged, dateAsDate = as.Date(date, format = "%Y-%m-%d"))
+# create column which tells which day of the week each date is
+merged = mutate(merged, dayOfWeek = weekdays(dateAsDate, abbr = TRUE))
+# create factor to simplify the day of the week into either weekday or weekend
+merged = mutate(merged, weekdayOrWeekend = ifelse(dayOfWeek == c('Mon','Tue','Wed','Thu','Fri','Sat','Sun'), 'weekday', 'weekend'))
+merged$weekdayOrWeekend = factor(merged$weekdayOrWeekend)
+head(merged)
+
+```
+2. Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
+```{r echo=TRUE}
+#now we'll aggregate by interval ID and weekdayOrWeekend
+meanPerIntervalIDNew = summarise(group_by(merged, interval, weekdayOrWeekend),
+                                 meanStepsFilled = mean(stepsFilled, na.rm = TRUE))
+
+library(lattice) 
+
+xyplot(meanStepsFilled~interval|weekdayOrWeekend,
+        data=meanPerIntervalIDNew,
+        type = 'l',
+       layout=c(1,3),
+        main="Mean number of steps per time interval, weekday vs. weekend")
+```
+
+
+
