@@ -1,8 +1,9 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
+title: 'Reproducible Research: Peer Assessment 1'
+output:
   html_document:
-    keep_md: true
+    fig_caption: yes
+    keep_md: yes
 ---
 
 
@@ -10,6 +11,10 @@ output:
 Loading the data:
 ```{r echo=TRUE}
 library(dplyr)
+knitr::opts_chunk$set(fig.width=8, fig.height=6, fig.path='figures/',
+                      echo=TRUE, warning=FALSE, message=FALSE)
+
+
 projectLocation = '/Users/JKG/Documents/00_coursera/reproresearch/project1'
 setwd(projectLocation)
 fileName = 'activity.csv'
@@ -162,13 +167,15 @@ head(merged)
 meanPerIntervalIDNew = summarise(group_by(merged, interval, weekdayOrWeekend),
                                  meanStepsFilled = mean(stepsFilled, na.rm = TRUE))
 
+# draw the plot, splitting weekdays and weekends
 library(lattice) 
-
 xyplot(meanStepsFilled~interval|weekdayOrWeekend,
         data=meanPerIntervalIDNew,
         type = 'l',
        layout=c(1,3),
         main="Mean number of steps per time interval, weekday vs. weekend")
+
+#notice that both weekends and weekdays see the main spike of steps around interval 800.  On the weekday chart there is a higher peak (around 294), and the weekday shows more interval-to-interval variance.
 ```
 
 

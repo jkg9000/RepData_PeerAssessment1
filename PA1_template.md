@@ -22,6 +22,10 @@ library(dplyr)
 ```
 
 ```r
+knitr::opts_chunk$set(fig.width=8, fig.height=6, fig.path='figures/',
+                      echo=TRUE, warning=FALSE, message=FALSE)
+
+
 projectLocation = '/Users/JKG/Documents/00_coursera/reproresearch/project1'
 setwd(projectLocation)
 fileName = 'activity.csv'
@@ -47,7 +51,7 @@ sumPerDay = summarise(group_by(data, date),
 hist(sumPerDay$sumSteps)
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-2-1.png) 
+![](figures/unnamed-chunk-2-1.png) 
 
 
 ```r
@@ -81,7 +85,7 @@ with(meanPerIntervalID, plot(interval, meanSteps, main = "Average Steps Per Inte
 lines(meanPerIntervalID$interval, meanPerIntervalID$meanSteps)
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-5-1.png) 
+![](figures/unnamed-chunk-5-1.png) 
 
 
 ```r
@@ -145,7 +149,7 @@ head(merged)
 hist(sumPerDay$sumSteps, main= 'Histogram of original steps per day, excluding NAs')
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-10-1.png) 
+![](figures/unnamed-chunk-10-1.png) 
 
 
 ```r
@@ -157,7 +161,7 @@ sumPerDayFilled = summarise(group_by(merged, date),
 hist(sumPerDayFilled$sumSteps, main = 'Histogram of steps per day, with NAs replaced by mean per interval ID ')
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-11-1.png) 
+![](figures/unnamed-chunk-11-1.png) 
 
 ```r
 # as seen above, this new data set is more normally distributed, many fewer days with < 5,000 steps 
@@ -265,14 +269,6 @@ merged = mutate(merged, dateAsDate = as.Date(date, format = "%Y-%m-%d"))
 merged = mutate(merged, dayOfWeek = weekdays(dateAsDate, abbr = TRUE))
 # create factor to simplify the day of the week into either weekday or weekend
 merged = mutate(merged, weekdayOrWeekend = ifelse(dayOfWeek == c('Mon','Tue','Wed','Thu','Fri','Sat','Sun'), 'weekday', 'weekend'))
-```
-
-```
-## Warning in mutate_impl(.data, dots): longer object length is not a multiple
-## of shorter object length
-```
-
-```r
 merged$weekdayOrWeekend = factor(merged$weekdayOrWeekend)
 head(merged)
 ```
@@ -300,8 +296,8 @@ head(merged)
 meanPerIntervalIDNew = summarise(group_by(merged, interval, weekdayOrWeekend),
                                  meanStepsFilled = mean(stepsFilled, na.rm = TRUE))
 
+# draw the plot, splitting weekdays and weekends
 library(lattice) 
-
 xyplot(meanStepsFilled~interval|weekdayOrWeekend,
         data=meanPerIntervalIDNew,
         type = 'l',
@@ -309,7 +305,11 @@ xyplot(meanStepsFilled~interval|weekdayOrWeekend,
         main="Mean number of steps per time interval, weekday vs. weekend")
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-18-1.png) 
+![](figures/unnamed-chunk-18-1.png) 
+
+```r
+#notice that both weekends and weekdays see the main spike of steps around interval 800.  On the weekday chart there is a higher peak (around 294), and the weekday shows more interval-to-interval variance.
+```
 
 
 
